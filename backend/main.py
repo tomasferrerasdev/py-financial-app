@@ -1,7 +1,7 @@
 """ This is the main file of the FastAPI application. It contains the FastAPI instance and the CORS middleware. """
 
 from typing import Annotated, List
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import models
 from sqlalchemy.orm import Session
@@ -11,12 +11,15 @@ from database import SessionLocal, engine
 app = FastAPI()
 origins = [
     "http://localhost:3000",
+    "http://localhost:5173",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -39,6 +42,10 @@ class TransactionModel(TransactionBase):
         """This class is used to configure the Pydantic model."""
 
         orm_mode = True
+
+
+class TransactionDeleteRequest(BaseModel):
+    transaction_ids: List[int]
 
 
 def get_db():
@@ -71,3 +78,18 @@ async def read_transactions(db: db_dependency, skip: int = 0, limit: int = 100):
     """This function returns all transactions."""
     transactions = db.query(models.Transaction).offset(skip).limit(limit).all()
     return transactions
+
+
+@app.delete("/transactions/")
+async def delete_transactions(
+    delete_request: TransactionDeleteRequest, db: Session = Depends(get_db)
+):
+    """This function deletes multiple transactions based on a list of transaction IDs."""
+
+    db.query(models.Transaction).filter(
+        models.Transaction.id.in_(delete_request.transaction_ids)
+    ).delete(synchronize_session=False)
+    db.commit()
+    return {
+        "message": f"Transactions with IDs {delete_request.transaction_ids} deleted successfully."
+    }
