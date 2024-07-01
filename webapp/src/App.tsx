@@ -36,7 +36,7 @@ function App() {
       </h1>
       <div className="flex flex-col gap-8">
         <Form refetch={fetchTransactions} />
-        <Table transactions={transactions} />
+        <Table transactions={transactions} refetch={fetchTransactions} />
         <Chart transactions={transactions} />
       </div>
     </main>

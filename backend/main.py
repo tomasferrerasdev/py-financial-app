@@ -44,6 +44,10 @@ class TransactionModel(TransactionBase):
         orm_mode = True
 
 
+class TransactionDeleteRequest(BaseModel):
+    transaction_ids: List[int]
+
+
 def get_db():
     """This function returns a database session."""
     db = SessionLocal()
@@ -76,11 +80,16 @@ async def read_transactions(db: db_dependency, skip: int = 0, limit: int = 100):
     return transactions
 
 
-@app.delete("/transactions/{transaction_id}")
-async def delete_transaction(transaction_id: int, db: db_dependency):
-    """This function deletes a transaction."""
+@app.delete("/transactions/")
+async def delete_transactions(
+    delete_request: TransactionDeleteRequest, db: Session = Depends(get_db)
+):
+    """This function deletes multiple transactions based on a list of transaction IDs."""
+
     db.query(models.Transaction).filter(
-        models.Transaction.id == transaction_id
-    ).delete()
+        models.Transaction.id.in_(delete_request.transaction_ids)
+    ).delete(synchronize_session=False)
     db.commit()
-    return {"message": "Transaction deleted successfully."}
+    return {
+        "message": f"Transactions with IDs {delete_request.transaction_ids} deleted successfully."
+    }
