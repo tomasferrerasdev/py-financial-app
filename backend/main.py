@@ -1,7 +1,7 @@
 """ This is the main file of the FastAPI application. It contains the FastAPI instance and the CORS middleware. """
 
 from typing import Annotated, List
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import models
 from sqlalchemy.orm import Session
@@ -74,3 +74,13 @@ async def read_transactions(db: db_dependency, skip: int = 0, limit: int = 100):
     """This function returns all transactions."""
     transactions = db.query(models.Transaction).offset(skip).limit(limit).all()
     return transactions
+
+
+@app.delete("/transactions/{transaction_id}")
+async def delete_transaction(transaction_id: int, db: db_dependency):
+    """This function deletes a transaction."""
+    db.query(models.Transaction).filter(
+        models.Transaction.id == transaction_id
+    ).delete()
+    db.commit()
+    return {"message": "Transaction deleted successfully."}
